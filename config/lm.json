@@ -1,0 +1,1 @@
+{"emb_dim": 128, "hid_dim": 64, "epoch": 100, "batch_size": 500, "lr": 0.0001, "ko_size": 2183, "en_size": 2769}
