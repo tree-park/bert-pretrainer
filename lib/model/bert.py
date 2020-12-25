@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from lib.model.layers.layer import Encoder
 from lib.model.layers.modules import Affine
-from lib.model.layers.embedding import PositionalEmbedding, BERTEmbedding
+from lib.model.layers.embedding import BERTEmbedding
 
 
 class BERT(nn.Module):
