@@ -1,0 +1,3 @@
+[submodule "transformer-lm"]
+	path = lib/transformer-lm
+	url = git@github.com:tree-park/transformer-lm.git
