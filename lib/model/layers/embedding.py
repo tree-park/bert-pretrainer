@@ -50,6 +50,18 @@ class PositionalEmbedding(nn.Module):
         return self.dropout(resdl)
 
 
+class BERTEmbedding(PositionalEmbedding):
+
+    def __init__(self, vocab_size, emb_dim):
+        super(BERTEmbedding, self).__init__(vocab_size, emb_dim)
+
+    def forward(self, inp):
+        inp = self.super(inp)
+
+        # Segment embedding TODO
+        return inp
+
+
 def positional_encodeing(maxlen, dim):
     """ Give unique value by position and dimension """
     """  

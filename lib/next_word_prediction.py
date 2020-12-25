@@ -8,72 +8,73 @@ import math
 from lib.util import load_data
 from lib.data_batchify import Corpus, collate_fn
 from lib.data_preprocess import Vocab, preprocessor
-from lib.model.bert import Transformer
+from lib.model.bert import BERT
 
 
-class BasicLM:
-    def __init__(self, dconf, mconf):
-        self.dconf = dconf
-        self.mconf = mconf
-
-        self.ko_vocab = Vocab(self.dconf.min_cnt)
-        self.voc_size = 0
-        self.dataset = None
-        self._dataload = None
-
-        self.model = None
-        self.loss = None
-        self.perpelexity = None
-        self.optim = None
-        self.lrscheder = None
-
-    def train(self):
-        raise
-
-    def predict(self, corpus):
-        raise
-
-    def save(self, fname: str):
-        """ save model """
-
-        torch.save({
-            'model': self.model.state_dict(),
-            'optim': self.optim.state_dict(),
-            'ko_vocab': self.ko_vocab,
-        }, 'results/model/' + fname)
-
-    def load(self, fname: str, retrain=False):
-        """ load pytorch model """
-        if not self.model:
-            raise
-        checkpoint = torch.load('results/model/' + fname)
-        self.model.load_state_dict(checkpoint['model'])
-        if self.optim and retrain:
-            self.optim.load_state_dict(checkpoint['optim'])
-        self.ko_vocab = checkpoint['ko_vocab']
-        self.ko_vocab.to_idx2word()
-        self.model.eval()
-        print(len(self.ko_vocab))
-
-    def translate(self, kor: list):
-        """ Translate Korean to English """
-        pred = self.predict(kor)
-        print(pred)
-
-        rst = []
-        for sent_idx in pred:
-            sent = [self.ko_vocab.get_word(idx) for idx in sent_idx if not 0]
-            rst.append(sent)
-        return rst
-
-
-@torch.no_grad()
-def word_accuracy(pred, target):
-    print(pred.argmax(1))
-    print(target)
-    acc = sum(pred.argmax(1) == target).item() / len(target)
-    return acc
-
+#
+# class BasicLM:
+#     def __init__(self, dconf, mconf):
+#         self.dconf = dconf
+#         self.mconf = mconf
+#
+#         self.ko_vocab = Vocab(self.dconf.min_cnt)
+#         self.voc_size = 0
+#         self.dataset = None
+#         self._dataload = None
+#
+#         self.model = None
+#         self.loss = None
+#         self.perpelexity = None
+#         self.optim = None
+#         self.lrscheder = None
+#
+#     def train(self):
+#         raise
+#
+#     def predict(self, corpus):
+#         raise
+#
+#     def save(self, fname: str):
+#         """ save model """
+#
+#         torch.save({
+#             'model': self.model.state_dict(),
+#             'optim': self.optim.state_dict(),
+#             'ko_vocab': self.ko_vocab,
+#         }, 'results/model/' + fname)
+#
+#     def load(self, fname: str, retrain=False):
+#         """ load pytorch model """
+#         if not self.model:
+#             raise
+#         checkpoint = torch.load('results/model/' + fname)
+#         self.model.load_state_dict(checkpoint['model'])
+#         if self.optim and retrain:
+#             self.optim.load_state_dict(checkpoint['optim'])
+#         self.ko_vocab = checkpoint['ko_vocab']
+#         self.ko_vocab.to_idx2word()
+#         self.model.eval()
+#         print(len(self.ko_vocab))
+#
+#     def translate(self, kor: list):
+#         """ Translate Korean to English """
+#         pred = self.predict(kor)
+#         print(pred)
+#
+#         rst = []
+#         for sent_idx in pred:
+#             sent = [self.ko_vocab.get_word(idx) for idx in sent_idx if not 0]
+#             rst.append(sent)
+#         return rst
+#
+#
+# @torch.no_grad()
+# def word_accuracy(pred, target):
+#     print(pred.argmax(1))
+#     print(target)
+#     acc = sum(pred.argmax(1) == target).item() / len(target)
+#     return acc
+# TODO Transformer에서 sub-git으로 가져오기
 
 class BERTEmbedding(BasicLM):
 
@@ -90,7 +91,7 @@ class BERTEmbedding(BasicLM):
         print(len(self.ko_vocab))
         self.mconf.ko_size = len(self.ko_vocab) + 1
 
-        self.model = Transformer(self.mconf.d_m, self.mconf.ko_size, self.mconf.d_ff)
+        self.model = BERT(self.mconf.d_m, self.mconf.ko_size, self.mconf.d_ff)
         self.loss = nn.CrossEntropyLoss()
         self.optim = optim.Adam(params=self.model.parameters(), lr=self.mconf.lr)
         self.lrscheder = optim.lr_scheduler.ReduceLROnPlateau(self.optim, patience=5)
@@ -121,7 +122,7 @@ class BERTEmbedding(BasicLM):
         self.ko_vocab.to_idx2word()
 
     def load(self, fname: str, retrain=False):
-        self.model = Transformer(self.mconf.d_m, self.mconf.ko_size, self.mconf.d_ff)
+        self.model = BERT(self.mconf.d_m, self.mconf.ko_size, self.mconf.d_ff)
         BasicLM.load(self, fname)
 
     def predict(self, corpus):
@@ -129,14 +130,15 @@ class BERTEmbedding(BasicLM):
         pred_set = self.dataset_form(ko_corpus, self.ko_vocab)
         pred_set = [torch.tensor(data) for data in pred_set]
         dataset = torch.nn.utils.rnn.pad_sequence(pred_set, batch_first=True)
-        pred = self.model.predict(dataset)
+        pred = self.model.predict_next_word(dataset)
+        pred = self.model.predict_sent_sequence(dataset)
         return pred
 
     def dataset_form(self, ko_corpus, ko_vocab):
         rst = []
-        for ko, en in ko_corpus:
-            ko = [ko_vocab[x] for x in ko]
-            rst.append(ko)
+        # for ko, en in ko_corpus:
+        #     ko = [ko_vocab[x] for x in ko]
+        #     rst.append(ko)
         return rst
 
     def info(self):
