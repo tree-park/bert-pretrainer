@@ -1,5 +1,5 @@
 # BERT Paper Implementation
-BERT Implementation Pytorch code
+BERT implementation pytorch low-level code
 
 ## Architecture  
 
