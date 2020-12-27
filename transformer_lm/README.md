@@ -1,6 +1,6 @@
 # transformer-lm
  
-Korean Language Model by Transformer
+Transformer Paper Implementation
    -
  - Pytorch  
- - Paper implementation of "Attention is all you need" (https://arxiv.org/abs/1706.03762)  
+ - Paper "Attention is all you need" (https://arxiv.org/abs/1706.03762)  
