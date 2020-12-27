@@ -19,7 +19,7 @@ class BERT(nn.Module):
         super(BERT, self).__init__()
         self.inp_emb = BERTEmbedding(vocab_size, d_m, sep_idx)
         self.enc_layers = nn.ModuleList(
-            [copy.deepcopy(Encoder(d_m, d_m*4, attn_heads)) for _ in range(n)])
+            [Encoder(d_m, d_m*4, attn_heads) for _ in range(n)])
 
         self.affine_1 = Affine(d_m, vocab_size)
         self.affine_2 = Affine(d_m, 2)

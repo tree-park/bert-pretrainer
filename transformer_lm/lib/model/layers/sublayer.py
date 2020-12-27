@@ -18,7 +18,7 @@ class MultiHeadAttention(nn.Module):
         self.head = n_head
         self.Wo = Affine(d_m, d_m)
         self.attn_layers = nn.ModuleList(
-            [copy.deepcopy(Attention(d_m, d_k, d_k, d_k)) for _ in range(n_head)])
+            [Attention(d_m, d_k, d_k, d_k) for _ in range(n_head)])
         self.dropout = nn.Dropout(p=0.01)
         self.addnorm = NormLayer(d_m)
 

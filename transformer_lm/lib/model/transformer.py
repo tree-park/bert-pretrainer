@@ -19,9 +19,9 @@ class Transformer(nn.Module):
         self.inp_emb = WordEmbedding(vocab_size, d_m)
         self.out_emb = WordEmbedding(vocab_size, d_m)
         self.enc_layers = nn.ModuleList(
-            [copy.deepcopy(Encoder(d_m, d_ff)) for _ in range(n)])
+            [Encoder(d_m, d_ff) for _ in range(n)])
         self.dec_layers = nn.ModuleList(
-            [copy.deepcopy(Decoder(d_m, d_m, d_ff)) for _ in range(n)])
+            [Decoder(d_m, d_m, d_ff) for _ in range(n)])
         self.affine = Affine(d_m, vocab_size)
         self.n = n
 
