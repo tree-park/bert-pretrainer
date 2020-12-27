@@ -48,7 +48,8 @@ class BERTEmbedding(BasicLM):
                                     num_workers=0, collate_fn=collate_fn)
         self.mconf.ko_size = len(self.ko_vocab) + 1
 
-        self.model = BERT(self.mconf.d_m, self.mconf.ko_size, self.ko_vocab[TokenMarks.SEP])
+        self.model = BERT(self.mconf.ko_size, self.ko_vocab[TokenMarks.SEP],
+                          self.mconf.d_m, self.mconf.attn_heads, self.mconf.n_layer)
         self.loss = nn.CrossEntropyLoss()
         self.optim = optim.Adam(params=self.model.parameters(), lr=self.mconf.lr)
         self.lrscheder = optim.lr_scheduler.ReduceLROnPlateau(self.optim, patience=5)

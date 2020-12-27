@@ -11,15 +11,14 @@ from .modules import Affine, Attention, NormLayer
 class MultiHeadAttention(nn.Module):
     """ Multi-head Attention + Add&Norm """
 
-    def __init__(self, d_m, head=4):
+    def __init__(self, d_m, n_head=4):
         super(MultiHeadAttention, self).__init__()
-        self.d_m = d_m
-        assert d_m % head == 0
-        self.d_k = int(d_m / head)
-        self.head = head
-        self.Wo = Affine(self.d_m, d_m)
+        assert d_m % n_head == 0
+        d_k = int(d_m / n_head)
+        self.head = n_head
+        self.Wo = Affine(d_m, d_m)
         self.attn_layers = nn.ModuleList(
-            [copy.deepcopy(Attention(self.d_m, self.d_k, self.d_k, self.d_k)) for _ in range(head)])
+            [copy.deepcopy(Attention(d_m, d_k, d_k, d_k)) for _ in range(n_head)])
         self.dropout = nn.Dropout(p=0.01)
         self.addnorm = NormLayer(d_m)
 

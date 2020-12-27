@@ -15,11 +15,11 @@ from lib.model.layers.embedding import BERTEmbedding
 class BERT(nn.Module):
     """ Assemble layers to build Transformer """
 
-    def __init__(self, d_m, vocab_size, sep_idx, n=3):
+    def __init__(self, vocab_size, sep_idx, d_m=768, attn_heads=12, n=12):
         super(BERT, self).__init__()
         self.inp_emb = BERTEmbedding(vocab_size, d_m, sep_idx)
         self.enc_layers = nn.ModuleList(
-            [copy.deepcopy(Encoder(d_m, d_m, d_m*4)) for _ in range(n)])
+            [copy.deepcopy(Encoder(d_m, d_m*4, attn_heads)) for _ in range(n)])
 
         self.affine_1 = Affine(d_m, vocab_size)
         self.affine_2 = Affine(d_m, 2)

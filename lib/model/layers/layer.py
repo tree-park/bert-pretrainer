@@ -8,9 +8,9 @@ from transformer_lm.lib.model.layers.sublayer import MultiHeadAttention, Positio
 
 
 class Encoder(nn.Module):
-    def __init__(self, inp_dim, d_m, d_ff):
+    def __init__(self, d_m, d_ff, n_head):
         super(Encoder, self).__init__()
-        self.multi_attn = MultiHeadAttention(d_m, inp_dim)
+        self.multi_attn = MultiHeadAttention(d_m, n_head)
         self.pw_ff = PositionWiseFFLayer(d_m, d_ff)
 
     def forward(self, inp, mask):
