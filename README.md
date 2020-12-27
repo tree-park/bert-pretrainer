@@ -5,7 +5,7 @@ BERT implementation pytorch code
 
 Embedding  
 - Positional Encoding
-- WordEmbedding
+- Word Embedding
 - Segment Embedding
 
 Transformer Encoder  
