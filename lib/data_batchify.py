@@ -11,13 +11,6 @@ class Corpus(Dataset):
         return len(self._data)
 
     def __getitem__(self, idx: int):
-        """
-        return input word and target word
-        1. extract maked lm
-        2. extract nsp
-        return input_id, segment_id, mask, lm_id, nsp_id
-
-        """
         inp, nsp_trgs, lm_trg, lm_posi = self._data[idx][0], self._data[idx][1], \
                                          self._data[idx][2], self._data[idx][3]
 
