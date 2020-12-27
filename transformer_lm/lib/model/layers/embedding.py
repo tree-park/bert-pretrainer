@@ -15,19 +15,12 @@ class PositionalEmbedding(nn.Module):
     def __init__(self, vocab_size, emb_dim):
         super(PositionalEmbedding, self).__init__()
         # self.affine = Affine(vocab_size, emb_dim)
-        self.embedding = nn.Embedding(vocab_size, emb_dim)
+        self.embedding = WordEmbedding(vocab_size, emb_dim)
         self.dropout = nn.Dropout(p=0.1)
 
     def word_emb(self, inp):
         scale = torch.sqrt(torch.FloatTensor([inp.size(0)]))
         out = self.embedding(inp) / scale
-        return out
-
-    @staticmethod
-    def posi_emb(bsize, maxlen, d_m):
-        out = torch.stack(
-            [positional_encodeing(maxlen, d_m)] * bsize
-        )
         return out
 
     def forward(self, inp):
@@ -40,20 +33,34 @@ class PositionalEmbedding(nn.Module):
         임베딩값 dim 값으로 나눠주는거 놓침 
         """
         # [bsize, maxlen, emb_dim]
-        out = self.word_emb(inp)
+        out = self.embedding(inp)
         # [bsize, maxlen, emb_dim]
-        pe_rst = self.posi_emb(out.size(0), out.size(1), out.size(2))
+        pe_rst = positional_embedding(out.size(0), out.size(1), out.size(2))
         # [bsize, maxlen, emb_dim]
-        resdl = out + pe_rst
-        return self.dropout(resdl)
+        return self.dropout(out + pe_rst)
 
 
-def positional_encodeing(maxlen, dim):
+class WordEmbedding(nn.Module):
+    def __init__(self, vocab_size, emb_dim):
+        super(WordEmbedding, self).__init__()
+        # self.affine = Affine(vocab_size, emb_dim)
+        self.embedding = nn.Embedding(vocab_size, emb_dim)
+
+    def forward(self, inp):
+        scale = torch.sqrt(torch.FloatTensor([inp.size(0)]))
+        out = self.embedding(inp) / scale
+        return out
+
+
+def positional_embedding(bsize, maxlen, d_m):
+    out = torch.stack(
+        [positional_encoding(maxlen, d_m)] * bsize
+    )
+    return out
+
+
+def positional_encoding(maxlen, dim):
     """ Give unique value by position and dimension """
-    """  
-    블로그 코드 참고함 
-    https://catsirup.github.io/ai/2020/04/09/transformer-code.html#Positional-Embedding
-    """
 
     def term(i):
         return 1 / (10000 ** (2 * (i // 2) / dim))

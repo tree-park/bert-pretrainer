@@ -8,8 +8,6 @@ import torch.nn.functional as F
 
 from transformer_lm.lib.model.layers.modules import Affine
 from transformer_lm.lib.model.transformer import mask_not_pad
-
-
 from lib.model.layers.layer import Encoder
 from lib.model.layers.embedding import BERTEmbedding
 

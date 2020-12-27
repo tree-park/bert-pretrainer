@@ -5,15 +5,16 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from transformer_lm.lib.model.layers.embedding import PositionalEmbedding
-from transformer_lm.lib.data_preprocess import TokenMarks
+from transformer_lm.lib.model.layers.embedding import WordEmbedding, positional_embedding
 
 
-class BERTEmbedding(PositionalEmbedding):
+class BERTEmbedding(nn.Module):
 
     def __init__(self, vocab_size, emb_dim, sep_idx):
-        super(BERTEmbedding, self).__init__(vocab_size, emb_dim)
+        super(BERTEmbedding, self).__init__()
+        self.word_emb = WordEmbedding(vocab_size, emb_dim)
         self.segment_emb = nn.Embedding(2, emb_dim)
+        self.dropout = nn.Dropout(p=0.1)
         self.sep_idx = sep_idx
 
     def forward(self, inp):
@@ -22,9 +23,7 @@ class BERTEmbedding(PositionalEmbedding):
         """
         # [bsize, maxlen, emb_dim]
         idx_emb = self.word_emb(inp)
-        # [bsize, maxlen, emb_dim]
-        pe_emb = self.posi_emb(idx_emb.size(0), idx_emb.size(1), idx_emb.size(2))
-        # [bsize, maxlen, emb_dim]
+        pe_emb = positional_embedding(idx_emb.size(0), idx_emb.size(1), idx_emb.size(2))
         seg_idx = make_seg_idx(inp, self.sep_idx)
         seg_emb = self.segment_emb(seg_idx)
         emb = idx_emb + pe_emb + seg_emb

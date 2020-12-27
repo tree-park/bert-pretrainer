@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from .layers.layer import Encoder, Decoder
 from .layers.modules import Affine
-from .layers.embedding import PositionalEmbedding
+from .layers.embedding import WordEmbedding
 
 
 class Transformer(nn.Module):
@@ -16,8 +16,8 @@ class Transformer(nn.Module):
 
     def __init__(self, d_m, vocab_size, d_ff, n=3):
         super(Transformer, self).__init__()
-        self.inp_emb = PositionalEmbedding(vocab_size, d_m)
-        self.out_emb = PositionalEmbedding(vocab_size, d_m)
+        self.inp_emb = WordEmbedding(vocab_size, d_m)
+        self.out_emb = WordEmbedding(vocab_size, d_m)
         self.enc_layers = nn.ModuleList(
             [copy.deepcopy(Encoder(d_m, d_ff)) for _ in range(n)])
         self.dec_layers = nn.ModuleList(
