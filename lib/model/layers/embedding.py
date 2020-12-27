@@ -5,78 +5,42 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .modules import Affine
-
-
-# class WordEmbedding(nn.Module):
-#     """ Basic Word Embedding """
-#
-#     def __init__(self, vocab_size, emb_dim):
-#         super(WordEmbedding, self).__init__()
-#         self.affine = Affine(vocab_size, emb_dim)
-#
-#     def forward(self, x):
-#         return self.affine(x)
-
-
-class PositionalEmbedding(nn.Module):
-    """
-    Basic Word Embedding
-    Let the model learn sequence information with positional-encoding
-    """
-
-    def __init__(self, vocab_size, emb_dim):
-        super(PositionalEmbedding, self).__init__()
-        self.affine = Affine(vocab_size, emb_dim)
-        self.dropout = nn.Dropout(p=0.1)
-
-    def forward(self, inp):
-        """
-        Args:
-            x (Tensor): [bsize, maxlen, emb_dim]
-        Returns: [bsize, maxlen, emb_dim]
-        """
-        """
-        임베딩값 dim 값으로 나눠주는거 놓침 
-        """
-        # [bsize, maxlen, emb_dim]
-        out = self.affine(inp) / torch.sqrt(torch.FloatTensor([inp.size[0]]))
-        # [bsize, maxlen, emb_dim]
-        pe_rst = torch.stack(
-            [positional_encodeing(inp.size(1), inp.size(2))] * inp.size(0)
-        )
-        # [bsize, maxlen, emb_dim]
-        resdl = out + pe_rst
-        return self.dropout(resdl)
+from transformer_lm.lib.model.layers.embedding import PositionalEmbedding
+from transformer_lm.lib.data_preprocess import TokenMarks
 
 
 class BERTEmbedding(PositionalEmbedding):
 
-    def __init__(self, vocab_size, emb_dim):
+    def __init__(self, vocab_size, emb_dim, sep_idx):
         super(BERTEmbedding, self).__init__(vocab_size, emb_dim)
+        self.segment_emb = nn.Embedding(2, emb_dim)
+        self.sep_idx = sep_idx
 
     def forward(self, inp):
-        inp = self.super(inp)
+        """
+        inp [bsize, maxlen]
+        """
+        # [bsize, maxlen, emb_dim]
+        idx_emb = self.word_emb(inp)
+        # [bsize, maxlen, emb_dim]
+        pe_emb = self.posi_emb(idx_emb.size(0), idx_emb.size(1), idx_emb.size(2))
+        # [bsize, maxlen, emb_dim]
+        seg_idx = make_seg_idx(inp, self.sep_idx)
+        seg_emb = self.segment_emb(seg_idx)
+        emb = idx_emb + pe_emb + seg_emb
+        return self.dropout(emb)
 
-        # Segment embedding TODO
-        return inp
 
-
-def positional_encodeing(maxlen, dim):
-    """ Give unique value by position and dimension """
-    """  
-    블로그 코드 참고함 
-    https://catsirup.github.io/ai/2020/04/09/transformer-code.html#Positional-Embedding
+def make_seg_idx(inp, sep_idx):
     """
+    inp [bsize, maxlen]
+    """
+    out = np.zeros_like(inp)
+    dup = []
+    for i, posi in [i for i in zip(*np.where(inp == sep_idx))]:
+        if i in dup:
+            continue
+        dup.append(i)
+        out[i][:posi+1] = 1
+    return torch.tensor(out)
 
-    def term(i):
-        return 1 / (10000 ** (2 * (i // 2) / dim))
-
-    pos = np.arange(maxlen)
-    dims = np.arange(dim)
-    dims = map(lambda x: term(x), dims)
-    pe_val = pos * dims
-    pe = np.empty(maxlen, dim)  # [maxlen, dim]
-    pe[:, 0::2] = torch.sin(pe_val)
-    pe[:, 1::2] = torch.cos(pe_val)
-    return pe

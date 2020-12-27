@@ -4,7 +4,7 @@ Encoder and Decoder Layer
 import torch
 import torch.nn as nn
 
-from .sublayer import MultiHeadAttention, PositionWiseFFLayer
+from transformer_lm.lib.model.layers.sublayer import MultiHeadAttention, PositionWiseFFLayer
 
 
 class Encoder(nn.Module):

@@ -6,19 +6,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from transformer_lm.lib.model.layers.modules import Affine
+from transformer_lm.lib.model.transformer import mask_not_pad
+
+
 from lib.model.layers.layer import Encoder
-from lib.model.layers.modules import Affine
 from lib.model.layers.embedding import BERTEmbedding
 
 
 class BERT(nn.Module):
     """ Assemble layers to build Transformer """
 
-    def __init__(self, d_m, vocab_size, d_ff, n=3):
+    def __init__(self, d_m, vocab_size, sep_idx, n=3):
         super(BERT, self).__init__()
-        self.inp_emb = BERTEmbedding(vocab_size, d_m)
+        self.inp_emb = BERTEmbedding(vocab_size, d_m, sep_idx)
         self.enc_layers = nn.ModuleList(
-            [copy.deepcopy(Encoder(d_m, d_m, d_ff)) for _ in range(n)])
+            [copy.deepcopy(Encoder(d_m, d_m, d_m*4)) for _ in range(n)])
 
         self.affine_1 = Affine(d_m, vocab_size)
         self.affine_2 = Affine(d_m, 2)
@@ -40,88 +43,53 @@ class BERT(nn.Module):
             enc = layer(enc, src_mask)
         return enc
 
-    def forward(self, inp_batch):
+    def forward(self, inp_batch, lm_posi):
         """
         Args:
             inp_batch (Tensor): [batch size, maxlen]
-            out_batch (Tensor): [batch size, maxlen]
+            lm_posi (Tensor): [batch size, trg_size(15% of sent)]
         Returns: [batch size, maxlen, vocab_size]
         """
         # Encoder
-        src_mask = get_pad_mask(inp_batch)
+        src_mask = mask_not_pad(inp_batch)
         # [batch size, maxlen, d_m]
         enc = self.encoder(inp_batch, src_mask)
 
         # Next Word Prediction
         # [batch size, maxlen, vocab_size]
-        rst_1 = F.log_softmax(self.affine_1(enc))
+        lm_enc = self.affine_1(enc)
+        # [batch size, num_mask, vocab_size]
+        rst_1 = [F.log_softmax(lm_enc[i][posi], dim=-1) for i, posi in enumerate(lm_posi)]
 
         # Sentence location Prediction
-        # TODO Extract [CLS] token only to go affine_2
-        # => [batch size, 1, d_m]
-
-        # [batch size, maxlen, 2]
-        rst_2 = F.log_softmax(self.affine_2(enc))
+        # [batch size, d_m]
+        cls = enc[:, 0]
+        # [batch size, 2]
+        rst_2 = F.log_softmax(self.affine_2(cls), dim=-1)
         return rst_1, rst_2
 
-    def predict_next_word(self, inp_batch):
+    def predict_next_word(self, inp_batch, lm_posi):
         """
         Args:
             inp_batch (Tensor): [batch size, maxlen]
         Returns: [batch size, maxlen, vocab_size]
         """
-        with torch.no_grad:
-            src_mask = get_pad_mask(inp_batch)
-            # [batch size, maxlen, d_m]
+        with torch.no_grad():
+            src_mask = mask_not_pad(inp_batch)
             enc = self.encoder(inp_batch, src_mask)
-            # [batch size, maxlen, d_m] @ [d_m, vocab_size]
-            # => [batch size, maxlen, vocab_size]
-            rst = F.log_softmax(self.affine_1(enc))
+            lm_enc = self.affine_1(enc)
+            rst = [F.log_softmax(lm_enc[i][posi], dim=-1) for i, posi in enumerate(lm_posi)]
         return rst
 
-    def predict_sent_sequence(self, inp_batch):
+    def predict_is_next_sent(self, inp_batch):
         """
         Args:
             inp_batch (Tensor): [batch size, maxlen]
         Returns: [batch size, maxlen, vocab_size]
         """
-        with torch.no_grad:
-            src_mask = get_pad_mask(inp_batch)
-            # [batch size, maxlen, d_m]
+        with torch.no_grad():
+            src_mask = mask_not_pad(inp_batch)
             enc = self.encoder(inp_batch, src_mask)
-
-            # TODO Extract [CLS] token only to go affine_2
-            # => [batch size, 1, d_m]
-
-            # [batch size, maxlen, d_m] @ [d_m, vocab_size]
-            # => [batch size, maxlen, vocab_size]
-            rst = F.log_softmax(self.affine_2(enc))
+            cls = enc[:, 0]
+            rst = F.log_softmax(self.affine_2(cls), dim=-1)
         return rst
-
-
-def get_pad_mask(x):
-    """
-    Mark True at PAD
-    Args:
-        x (Tensor): [bsize, maxlen] with word idx
-    Returns: [bsize, 1, maxlen] with bool
-    """
-    return (x <= 0).unsqueeze(1)
-
-
-def get_dec_mask(x):
-    """
-    Mark dec right sequence
-    Args:
-        x (Tensor): [bsize, maxlen] with bool
-    Returns: [bsize, maxlen, maxlen] with bool
-    """
-    # [bsize, 1, maxlen]
-    pad_masked = get_pad_mask(x)
-    # [maxlen, maxlen]
-    seq_masked = torch.tril(torch.ones(x.size(2), x.size(2)))
-    # [bsize, maxlen, maxlen]
-    seq_masked = seq_masked.repeat(x.size(0))
-    # [bsize, maxlen, maxlen]
-    masked = seq_masked.masked_fill(pad_masked == 1, 0)
-    return masked
