@@ -23,8 +23,13 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 @torch.no_grad()
 def accuracy(preds, target):
     preds = [pred.argmax(-1) for pred in preds]
-    acc = sum([sum(t == p) for t, p in zip(target, preds)])
-    return acc
+    true_positive, cnt = 0, 0
+    for t, p in zip(target, preds):
+        true_positive += sum(t == p)
+        cnt += len(p)
+    true_positive = max(1, true_positive)
+    acc = true_positive/cnt
+    return float(acc)
 
 
 class BERTEmbedding(BasicLM):
@@ -57,7 +62,6 @@ class BERTEmbedding(BasicLM):
                 self.optim.zero_grad()
                 # src, trg for Masked LM
                 inp, nsp_trgs, lm_trg, lm_posi = batch
-                print('inp.shape: ', inp.shape)
                 pred_lm, pred_nsp = self.model(inp, lm_posi)
 
                 b_loss_nsp = self.loss(pred_nsp, torch.tensor(nsp_trgs))

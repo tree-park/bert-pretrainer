@@ -1,5 +1,5 @@
 {
   "max_len": 100,
-  "min_cnt": 1,
+  "min_cnt": 5,
   "train_ko_path": "data/train"
 }
